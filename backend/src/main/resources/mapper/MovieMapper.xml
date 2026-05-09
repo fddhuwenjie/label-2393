@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.taopiaopiao.mapper.MovieMapper">
+    
+    <!-- 通用查询条件 -->
+    <sql id="whereCondition">
+        <where>
+            <if test="genre != null and genre != ''">
+                AND genre = #{genre}
+            </if>
+            <if test="region != null and region != ''">
+                AND region = #{region}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (title LIKE CONCAT('%', #{keyword}, '%') 
+                     OR director LIKE CONCAT('%', #{keyword}, '%')
+                     OR actors LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </sql>
+    
+    <!-- 动态SQL查询电影列表 -->
+    <select id="findList" resultType="Movie">
+        SELECT * FROM movie
+        <include refid="whereCondition"/>
+        ORDER BY avg_rating DESC, rating_count DESC
+    </select>
+    
+    <!-- 分页查询电影列表 -->
+    <select id="findListPaged" resultType="Movie">
+        SELECT * FROM movie
+        <include refid="whereCondition"/>
+        ORDER BY avg_rating DESC, rating_count DESC
+        LIMIT #{offset}, #{size}
+    </select>
+    
+    <!-- 统计电影总数 -->
+    <select id="countList" resultType="Long">
+        SELECT COUNT(*) FROM movie
+        <include refid="whereCondition"/>
+    </select>
+    
+    <!-- 根据ID查询电影 -->
+    <select id="findById" resultType="Movie">
+        SELECT * FROM movie WHERE id = #{id}
+    </select>
+    
+    <!-- 获取所有电影类型 -->
+    <select id="findAllGenres" resultType="String">
+        SELECT DISTINCT genre FROM movie WHERE genre IS NOT NULL ORDER BY genre
+    </select>
+    
+    <!-- 获取所有地区 -->
+    <select id="findAllRegions" resultType="String">
+        SELECT DISTINCT region FROM movie WHERE region IS NOT NULL ORDER BY region
+    </select>
+    
+    <!-- 更新电影评分 -->
+    <update id="updateRating">
+        UPDATE movie SET avg_rating = #{avgRating}, rating_count = #{ratingCount}
+        WHERE id = #{id}
+    </update>
+    
+</mapper>
