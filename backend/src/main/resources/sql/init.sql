@@ -101,6 +101,17 @@ INSERT INTO `review` (`user_id`, `movie_id`, `rating`, `content`) VALUES
 (2, 10, 5, '经典中的经典，每次看都有新发现。'),
 (3, 10, 5, '烧脑神作，结局的陀螺到底倒没倒？');
 
+-- 评论点赞表
+DROP TABLE IF EXISTS `review_like`;
+CREATE TABLE `review_like` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '点赞记录ID',
+    `user_id` BIGINT NOT NULL COMMENT '点赞用户ID',
+    `review_id` BIGINT NOT NULL COMMENT '评论ID',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '点赞时间',
+    UNIQUE KEY `uk_user_review` (`user_id`, `review_id`),
+    KEY `idx_review_id` (`review_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='评论点赞表';
+
 -- 更新电影评分统计
 UPDATE movie m SET 
     avg_rating = (SELECT ROUND(AVG(rating), 1) FROM review WHERE movie_id = m.id),

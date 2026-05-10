@@ -8,7 +8,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 评论服务类
@@ -20,9 +23,12 @@ public class ReviewService {
     
     @Autowired
     private ReviewMapper reviewMapper;
-    
+
     @Autowired
     private MovieService movieService;
+
+    @Autowired
+    private ReviewLikeService reviewLikeService;
     
     /**
      * 根据ID获取评论
@@ -39,12 +45,31 @@ public class ReviewService {
     }
     
     /**
-     * 分页获取电影评论
+     * 分页获取电影评论（支持排序和点赞状态）
+     *
+     * @param movieId 电影ID
+     * @param page    页码
+     * @param size    每页数量
+     * @param sortBy  排序方式：latest-按时间降序，hot-按点赞数降序
+     * @param userId  当前登录用户ID（可为null，用于填充liked字段）
      */
-    public PageResult<Review> getByMovieIdPaged(Long movieId, Integer page, Integer size) {
+    public PageResult<Review> getByMovieIdPaged(Long movieId, Integer page, Integer size, String sortBy, Long userId) {
         int offset = (page - 1) * size;
-        List<Review> list = reviewMapper.findByMovieIdPaged(movieId, offset, size);
+        List<Review> list = reviewMapper.findByMovieIdPaged(movieId, offset, size, sortBy);
         Long total = reviewMapper.countByMovieId(movieId);
+
+        if (userId != null && !list.isEmpty()) {
+            List<Long> reviewIds = list.stream().map(Review::getId).collect(Collectors.toList());
+            Set<Long> likedIds = reviewLikeService.getLikedReviewIds(userId, reviewIds);
+            for (Review review : list) {
+                review.setLiked(likedIds.contains(review.getId()));
+            }
+        } else {
+            for (Review review : list) {
+                review.setLiked(false);
+            }
+        }
+
         return PageResult.of(list, total, page, size);
     }
     
@@ -110,9 +135,9 @@ public class ReviewService {
         Review review = reviewMapper.findById(id);
         if (review != null) {
             Long movieId = review.getMovieId();
+            reviewLikeService.deleteByReviewId(id);
             reviewMapper.delete(id);
             logger.info("删除评论: reviewId={}", id);
-            // 更新电影评分
             updateMovieRating(movieId);
         }
     }
