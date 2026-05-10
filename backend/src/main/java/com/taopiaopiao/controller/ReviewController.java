@@ -31,14 +31,22 @@ public class ReviewController {
     private ReviewService reviewService;
     
     /**
-     * 获取电影的评论（分页）
+     * 获取电影的评论（分页，支持排序）
+     *
+     * @param movieId 电影ID
+     * @param page    页码
+     * @param size    每页数量
+     * @param sortBy  排序方式：latest-按时间降序（默认），hot-按点赞数降序
      */
     @GetMapping("/movie/{movieId}")
     public Result<PageResult<Review>> getByMovieId(
             @PathVariable Long movieId,
             @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码最小为1") Integer page,
-            @RequestParam(defaultValue = "10") @Min(1) @Max(50) Integer size) {
-        PageResult<Review> reviews = reviewService.getByMovieIdPaged(movieId, page, size);
+            @RequestParam(defaultValue = "10") @Min(1) @Max(50) Integer size,
+            @RequestParam(defaultValue = "latest") String sortBy,
+            HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("currentUserId");
+        PageResult<Review> reviews = reviewService.getByMovieIdPaged(movieId, page, size, sortBy, userId);
         return Result.success(reviews);
     }
     

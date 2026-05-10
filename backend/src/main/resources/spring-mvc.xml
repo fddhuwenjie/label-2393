@@ -71,6 +71,7 @@
             <mvc:mapping path="/api/user/*"/>
             <mvc:mapping path="/api/review"/>
             <mvc:mapping path="/api/review/*"/>
+            <mvc:mapping path="/api/review/like/**"/>
             <!-- 排除不需要登录的接口 -->
             <mvc:exclude-mapping path="/api/user/login"/>
             <mvc:exclude-mapping path="/api/user/register"/>

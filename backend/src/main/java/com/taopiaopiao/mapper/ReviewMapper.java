@@ -20,11 +20,12 @@ public interface ReviewMapper {
     List<Review> findByMovieId(@Param("movieId") Long movieId);
     
     /**
-     * 根据电影ID分页查询评论
+     * 根据电影ID分页查询评论（支持排序）
      */
     List<Review> findByMovieIdPaged(@Param("movieId") Long movieId, 
                                      @Param("offset") Integer offset, 
-                                     @Param("size") Integer size);
+                                     @Param("size") Integer size,
+                                     @Param("sortBy") String sortBy);
     
     /**
      * 统计电影评论总数

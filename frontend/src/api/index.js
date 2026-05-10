@@ -77,4 +77,23 @@ export const reviewApi = {
   delete: (id) => api.delete(`/review/${id}`)
 }
 
+/**
+ * 评论点赞相关API
+ */
+export const reviewLikeApi = {
+  /**
+   * 点赞/取消点赞（toggle操作）
+   * @param {number} reviewId - 评论ID
+   * @returns {Promise<{data: {liked: boolean, likeCount: number}}>} 点赞结果
+   */
+  toggleLike: (reviewId) => api.post(`/review/like/${reviewId}`),
+
+  /**
+   * 查询当前用户对某评论的点赞状态
+   * @param {number} reviewId - 评论ID
+   * @returns {Promise<{data: {liked: boolean, likeCount: number}}>} 点赞状态
+   */
+  getLikeStatus: (reviewId) => api.get(`/review/like/status/${reviewId}`)
+}
+
 export default api
