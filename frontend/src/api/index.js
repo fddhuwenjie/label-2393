@@ -74,7 +74,10 @@ export const reviewApi = {
   getByUserId: (userId, params) => api.get(`/review/user/${userId}`, { params }),
   checkUserReview: (userId, movieId) => api.get('/review/check', { params: { userId, movieId } }),
   save: (data) => api.post('/review', data),
-  delete: (id) => api.delete(`/review/${id}`)
+  delete: (id) => api.delete(`/review/${id}`),
+  like: (reviewId) => api.post(`/review/${reviewId}/like`),
+  unlike: (reviewId) => api.delete(`/review/${reviewId}/like`),
+  getLikeInfo: (reviewId) => api.get(`/review/${reviewId}/like-info`)
 }
 
 export default api

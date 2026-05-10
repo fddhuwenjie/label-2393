@@ -64,7 +64,19 @@
 
         <!-- 评论列表 -->
         <div class="review-list">
-          <h3>全部评论 ({{ reviews.length }})</h3>
+          <div class="review-list-header">
+            <h3>全部评论 ({{ reviews.length }})</h3>
+            <div class="sort-tabs">
+              <span
+                :class="['sort-tab', { active: sortType === 'latest' }]"
+                @click="changeSort('latest')"
+              >最新</span>
+              <span
+                :class="['sort-tab', { active: sortType === 'hottest' }]"
+                @click="changeSort('hottest')"
+              >最热</span>
+            </div>
+          </div>
           <div v-if="reviews.length === 0" class="empty">
             <el-empty description="暂无评论，快来抢沙发吧！" />
           </div>
@@ -78,6 +90,15 @@
               <span class="time">{{ formatTime(review.createTime) }}</span>
             </div>
             <div class="review-content">{{ review.content }}</div>
+            <div class="review-actions">
+              <span
+                :class="['like-btn', { liked: review.liked }]"
+                @click="toggleLike(review)"
+              >
+                <i :class="review.liked ? 'el-icon-star-on' : 'el-icon-star-off'"></i>
+                <span>{{ review.likeCount || 0 }}</span>
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -106,7 +127,8 @@ export default {
       },
       loading: false,
       submitting: false,
-      defaultPoster: '/images/default-poster.jpg'
+      defaultPoster: '/images/default-poster.jpg',
+      sortType: 'latest'
     }
   },
   computed: {
@@ -153,10 +175,15 @@ export default {
         this.loading = false
       }
     },
-    async loadReviews() {
+    /**
+     * 加载评论列表
+     * @param {string} sort - 排序方式：latest（最新）或 hottest（最热）
+     * @returns {Promise<void>}
+     */
+    async loadReviews(sort = this.sortType) {
       if (!this.movieId) return
       try {
-        const res = await reviewApi.getByMovieId(this.movieId, { page: 1, size: 50 })
+        const res = await reviewApi.getByMovieId(this.movieId, { page: 1, size: 50, sort })
         this.reviews = res.data?.list || []
       } catch (e) {
         console.error('加载评论失败', e)
@@ -202,6 +229,47 @@ export default {
     formatTime(time) {
       if (!time) return ''
       return time.replace('T', ' ').substring(0, 16)
+    },
+    /**
+     * 切换评论排序方式
+     * @param {string} sort - 排序方式：latest（最新）或 hottest（最热）
+     * @returns {void}
+     */
+    changeSort(sort) {
+      if (this.sortType !== sort) {
+        this.sortType = sort
+        this.loadReviews(sort)
+      }
+    },
+    /**
+     * 切换评论点赞状态
+     * @param {Object} review - 评论对象
+     * @param {number} review.id - 评论ID
+     * @param {boolean} review.liked - 是否已点赞
+     * @param {number} review.likeCount - 点赞数
+     * @returns {Promise<void>}
+     */
+    async toggleLike(review) {
+      if (!this.user) {
+        this.$message.warning('请先登录')
+        this.$router.push('/login')
+        return
+      }
+
+      try {
+        if (review.liked) {
+          await reviewApi.unlike(review.id)
+          review.liked = false
+          review.likeCount = (review.likeCount || 0) - 1
+        } else {
+          await reviewApi.like(review.id)
+          review.liked = true
+          review.likeCount = (review.likeCount || 0) + 1
+        }
+      } catch (e) {
+        console.error('点赞操作失败', e)
+        this.$message.error(e.message || '操作失败')
+      }
     }
   }
 }
@@ -372,10 +440,42 @@ export default {
   border-radius: 25px;
 }
 
-.review-list h3 {
+.review-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 25px;
+}
+
+.review-list-header h3 {
+  margin: 0;
   color: #2d3436;
   font-size: 18px;
+}
+
+.sort-tabs {
+  display: flex;
+  gap: 20px;
+}
+
+.sort-tab {
+  cursor: pointer;
+  color: #b2bec3;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 20px;
+  transition: all 0.3s;
+}
+
+.sort-tab:hover {
+  color: #667eea;
+}
+
+.sort-tab.active {
+  color: white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
 .review-item {
@@ -420,6 +520,34 @@ export default {
   line-height: 1.9;
   padding-left: 55px;
   font-size: 15px;
+}
+
+.review-actions {
+  padding-left: 55px;
+  margin-top: 15px;
+}
+
+.like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: #b2bec3;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  transition: all 0.3s;
+  user-select: none;
+}
+
+.like-btn:hover {
+  color: #f6d365;
+  background: rgba(246, 211, 101, 0.1);
+}
+
+.like-btn.liked {
+  color: #f6d365;
+  background: rgba(246, 211, 101, 0.1);
 }
 
 .empty {

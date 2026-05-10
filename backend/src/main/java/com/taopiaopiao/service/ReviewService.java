@@ -39,11 +39,13 @@ public class ReviewService {
     }
     
     /**
-     * 分页获取电影评论
+     * 分页获取电影评论（支持排序）
+     * @param sort 排序方式：latest-最新，hottest-最热
+     * @param currentUserId 当前登录用户ID（用于标记是否已点赞）
      */
-    public PageResult<Review> getByMovieIdPaged(Long movieId, Integer page, Integer size) {
+    public PageResult<Review> getByMovieIdPaged(Long movieId, Integer page, Integer size, String sort, Long currentUserId) {
         int offset = (page - 1) * size;
-        List<Review> list = reviewMapper.findByMovieIdPaged(movieId, offset, size);
+        List<Review> list = reviewMapper.findByMovieIdPaged(movieId, offset, size, sort, currentUserId);
         Long total = reviewMapper.countByMovieId(movieId);
         return PageResult.of(list, total, page, size);
     }
