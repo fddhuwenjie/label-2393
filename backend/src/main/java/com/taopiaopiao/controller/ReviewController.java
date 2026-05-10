@@ -6,6 +6,7 @@ import com.taopiaopiao.dto.ReviewRequest;
 import com.taopiaopiao.entity.Review;
 import com.taopiaopiao.exception.ForbiddenException;
 import com.taopiaopiao.service.ReviewService;
+import com.taopiaopiao.service.ReviewLikeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,16 +30,23 @@ public class ReviewController {
     
     @Autowired
     private ReviewService reviewService;
+
+    @Autowired
+    private ReviewLikeService reviewLikeService;
     
     /**
-     * 获取电影的评论（分页）
+     * 获取电影的评论（分页，支持排序）
+     * @param sort 排序方式：latest（最新）、hottest（最热）
      */
     @GetMapping("/movie/{movieId}")
     public Result<PageResult<Review>> getByMovieId(
             @PathVariable Long movieId,
             @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码最小为1") Integer page,
-            @RequestParam(defaultValue = "10") @Min(1) @Max(50) Integer size) {
-        PageResult<Review> reviews = reviewService.getByMovieIdPaged(movieId, page, size);
+            @RequestParam(defaultValue = "10") @Min(1) @Max(50) Integer size,
+            @RequestParam(defaultValue = "latest") String sort,
+            HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("currentUserId");
+        PageResult<Review> reviews = reviewService.getByMovieIdPaged(movieId, page, size, sort, userId);
         return Result.success(reviews);
     }
     
@@ -101,7 +109,47 @@ public class ReviewController {
         }
         
         logger.info("用户删除评论: userId={}, reviewId={}", currentUserId, id);
+        reviewLikeService.deleteByReviewId(id);
         reviewService.delete(id);
         return Result.success();
+    }
+
+    /**
+     * 点赞评论
+     */
+    @PostMapping("/{reviewId}/like")
+    public Result<Void> like(@PathVariable Long reviewId, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("currentUserId");
+
+        logger.info("用户点赞: userId={}, reviewId={}", userId, reviewId);
+        reviewLikeService.like(userId, reviewId);
+        return Result.success();
+    }
+
+    /**
+     * 取消点赞
+     */
+    @DeleteMapping("/{reviewId}/like")
+    public Result<Void> unlike(@PathVariable Long reviewId, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("currentUserId");
+
+        logger.info("用户取消点赞: userId={}, reviewId={}", userId, reviewId);
+        reviewLikeService.unlike(userId, reviewId);
+        return Result.success();
+    }
+
+    /**
+     * 获取评论点赞信息
+     */
+    @GetMapping("/{reviewId}/like-info")
+    public Result<java.util.Map<String, Object>> getLikeInfo(
+            @PathVariable Long reviewId,
+            HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("currentUserId");
+
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("likeCount", reviewLikeService.getLikeCount(reviewId));
+        result.put("liked", userId != null && reviewLikeService.isLiked(userId, reviewId));
+        return Result.success(result);
     }
 }

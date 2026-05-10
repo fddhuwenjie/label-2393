@@ -22,4 +22,8 @@ public class Review {
     private String avatar;
     private String movieTitle;
     private String moviePoster;
+
+    // 点赞相关字段
+    private Long likeCount;
+    private Boolean liked;
 }
