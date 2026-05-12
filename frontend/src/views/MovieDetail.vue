@@ -64,7 +64,21 @@
 
         <!-- 评论列表 -->
         <div class="review-list">
-          <h3>全部评论 ({{ reviews.length }})</h3>
+          <div class="list-header">
+            <h3>全部评论 ({{ reviews.length }})</h3>
+            <div class="sort-tabs">
+              <span 
+                class="sort-tab" 
+                :class="{ active: sortBy === 'latest' }"
+                @click="changeSort('latest')"
+              >最新</span>
+              <span 
+                class="sort-tab" 
+                :class="{ active: sortBy === 'hottest' }"
+                @click="changeSort('hottest')"
+              >最热</span>
+            </div>
+          </div>
           <div v-if="reviews.length === 0" class="empty">
             <el-empty description="暂无评论，快来抢沙发吧！" />
           </div>
@@ -78,6 +92,16 @@
               <span class="time">{{ formatTime(review.createTime) }}</span>
             </div>
             <div class="review-content">{{ review.content }}</div>
+            <div class="review-actions">
+              <span 
+                class="like-btn" 
+                :class="{ liked: review.liked }"
+                @click="toggleLike(review)"
+              >
+                <i :class="review.liked ? 'el-icon-thumb' : 'el-icon-thumb-empty'"></i>
+                <span>{{ review.likeCount || 0 }}</span>
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -106,7 +130,8 @@ export default {
       },
       loading: false,
       submitting: false,
-      defaultPoster: '/images/default-poster.jpg'
+      defaultPoster: '/images/default-poster.jpg',
+      sortBy: 'latest'
     }
   },
   computed: {
@@ -141,6 +166,10 @@ export default {
     }
   },
   methods: {
+    /**
+     * 加载电影详情信息
+     * @returns {Promise<void>}
+     */
     async loadMovie() {
       if (!this.movieId) return
       this.loading = true
@@ -153,15 +182,55 @@ export default {
         this.loading = false
       }
     },
+    /**
+     * 加载评论列表
+     * @returns {Promise<void>}
+     */
     async loadReviews() {
       if (!this.movieId) return
       try {
-        const res = await reviewApi.getByMovieId(this.movieId, { page: 1, size: 50 })
+        const res = await reviewApi.getByMovieId(this.movieId, { 
+          page: 1, 
+          size: 50,
+          sortBy: this.sortBy
+        })
         this.reviews = res.data?.list || []
       } catch (e) {
         console.error('加载评论失败', e)
       }
     },
+    /**
+     * 切换评论排序方式
+     * @param {string} sortType - 排序方式：latest(最新) / hottest(最热)
+     * @returns {Promise<void>}
+     */
+    async changeSort(sortType) {
+      this.sortBy = sortType
+      await this.loadReviews()
+    },
+    /**
+     * 点赞/取消点赞评论
+     * @param {Object} review - 评论对象
+     * @param {number} review.id - 评论ID
+     * @returns {Promise<void>}
+     */
+    async toggleLike(review) {
+      if (!this.user) {
+        this.$message.warning('请先登录')
+        return
+      }
+      try {
+        const res = await reviewApi.toggleLike(review.id)
+        review.liked = res.data.liked
+        review.likeCount = res.data.likeCount
+      } catch (e) {
+        this.$message.error(e.message || '操作失败')
+      }
+    },
+    /**
+     * 检查当前用户是否已评价该电影
+     * @returns {Promise<void>}
+     */
     async checkMyReview() {
       if (!this.user || !this.movieId) return
       try {
@@ -175,6 +244,10 @@ export default {
         console.error('检查评论失败', e)
       }
     },
+    /**
+     * 提交评论（新增或更新）
+     * @returns {Promise<void>}
+     */
     async submitReview() {
       if (!this.movieId) return
       if (this.reviewForm.rating < 1) {
@@ -199,6 +272,11 @@ export default {
         this.submitting = false
       }
     },
+    /**
+     * 格式化时间显示
+     * @param {string} time - 原始时间字符串
+     * @returns {string} 格式化后的时间字符串
+     */
     formatTime(time) {
       if (!time) return ''
       return time.replace('T', ' ').substring(0, 16)
@@ -372,10 +450,50 @@ export default {
   border-radius: 25px;
 }
 
-.review-list h3 {
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 25px;
+}
+
+.list-header h3 {
+  margin: 0;
   color: #2d3436;
   font-size: 18px;
+}
+
+.sort-tabs {
+  display: flex;
+  gap: 20px;
+}
+
+.sort-tab {
+  cursor: pointer;
+  color: #b2bec3;
+  font-size: 15px;
+  font-weight: 500;
+  transition: all 0.3s;
+  position: relative;
+}
+
+.sort-tab:hover {
+  color: #667eea;
+}
+
+.sort-tab.active {
+  color: #667eea;
+}
+
+.sort-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 1px;
 }
 
 .review-item {
@@ -420,6 +538,39 @@ export default {
   line-height: 1.9;
   padding-left: 55px;
   font-size: 15px;
+}
+
+.review-actions {
+  padding-left: 55px;
+  margin-top: 15px;
+}
+
+.like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: #b2bec3;
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  background: #f8f9fa;
+  transition: all 0.3s;
+  user-select: none;
+}
+
+.like-btn:hover {
+  color: #667eea;
+  background: #eef1ff;
+}
+
+.like-btn.liked {
+  color: #e74c3c;
+  background: #fdecea;
+}
+
+.like-btn i {
+  font-size: 16px;
 }
 
 .empty {

@@ -16,13 +16,26 @@
         ORDER BY r.create_time DESC
     </select>
     
-    <!-- 根据电影ID分页查询评论 -->
+    <!-- 根据电影ID分页查询评论（支持排序） -->
     <select id="findByMovieIdPaged" resultType="Review">
-        SELECT r.*, u.username, u.nickname, u.avatar
+        SELECT r.*, u.username, u.nickname, u.avatar,
+               COALESCE(like_count.like_count, 0) as like_count
         FROM review r
         LEFT JOIN user u ON r.user_id = u.id
+        LEFT JOIN (
+            SELECT review_id, COUNT(*) as like_count
+            FROM review_like
+            GROUP BY review_id
+        ) like_count ON r.id = like_count.review_id
         WHERE r.movie_id = #{movieId}
-        ORDER BY r.create_time DESC
+        <choose>
+            <when test="sortBy == 'hottest'">
+                ORDER BY like_count DESC, r.create_time DESC
+            </when>
+            <otherwise>
+                ORDER BY r.create_time DESC
+            </otherwise>
+        </choose>
         LIMIT #{offset}, #{size}
     </select>
     

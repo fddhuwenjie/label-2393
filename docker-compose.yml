@@ -37,7 +37,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: root123456
       TZ: Asia/Shanghai
     ports:
-      - "8080:8080"
+      - "8393:8080"
     depends_on:
       mysql:
         condition: service_healthy
@@ -53,7 +53,7 @@ services:
     environment:
       TZ: Asia/Shanghai
     ports:
-      - "8081:80"
+      - "8394:80"
     depends_on:
       - backend
     networks:

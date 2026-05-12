@@ -5,6 +5,8 @@ import com.taopiaopiao.common.Result;
 import com.taopiaopiao.dto.ReviewRequest;
 import com.taopiaopiao.entity.Review;
 import com.taopiaopiao.exception.ForbiddenException;
+import com.taopiaopiao.exception.UnauthorizedException;
+import com.taopiaopiao.service.ReviewLikeService;
 import com.taopiaopiao.service.ReviewService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +18,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 评论控制器
@@ -30,15 +34,21 @@ public class ReviewController {
     @Autowired
     private ReviewService reviewService;
     
+    @Autowired
+    private ReviewLikeService reviewLikeService;
+    
     /**
-     * 获取电影的评论（分页）
+     * 获取电影的评论（分页，支持排序）
      */
     @GetMapping("/movie/{movieId}")
     public Result<PageResult<Review>> getByMovieId(
             @PathVariable Long movieId,
             @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码最小为1") Integer page,
-            @RequestParam(defaultValue = "10") @Min(1) @Max(50) Integer size) {
-        PageResult<Review> reviews = reviewService.getByMovieIdPaged(movieId, page, size);
+            @RequestParam(defaultValue = "10") @Min(1) @Max(50) Integer size,
+            @RequestParam(defaultValue = "latest") String sortBy,
+            HttpServletRequest request) {
+        Long currentUserId = (Long) request.getAttribute("currentUserId");
+        PageResult<Review> reviews = reviewService.getByMovieIdPaged(movieId, page, size, sortBy, currentUserId);
         return Result.success(reviews);
     }
     
@@ -103,5 +113,27 @@ public class ReviewController {
         logger.info("用户删除评论: userId={}, reviewId={}", currentUserId, id);
         reviewService.delete(id);
         return Result.success();
+    }
+    
+    /**
+     * 点赞/取消点赞评论（需要登录）
+     */
+    @PostMapping("/{id}/like")
+    public Result<Map<String, Object>> toggleLike(@PathVariable Long id, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("currentUserId");
+        if (userId == null) {
+            throw new UnauthorizedException("请先登录");
+        }
+        
+        logger.info("用户点赞操作: userId={}, reviewId={}", userId, id);
+        
+        boolean liked = reviewLikeService.toggleLike(userId, id);
+        int likeCount = reviewLikeService.getLikeCount(id);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("liked", liked);
+        result.put("likeCount", likeCount);
+        
+        return Result.success(result);
     }
 }
