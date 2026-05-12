@@ -38,12 +38,23 @@ public class ReviewService {
         return reviewMapper.findByMovieId(movieId);
     }
     
+    @Autowired
+    private ReviewLikeService reviewLikeService;
+    
     /**
-     * 分页获取电影评论
+     * 分页获取电影评论（支持排序）
      */
-    public PageResult<Review> getByMovieIdPaged(Long movieId, Integer page, Integer size) {
+    public PageResult<Review> getByMovieIdPaged(Long movieId, Integer page, Integer size, String sortBy, Long currentUserId) {
         int offset = (page - 1) * size;
-        List<Review> list = reviewMapper.findByMovieIdPaged(movieId, offset, size);
+        List<Review> list = reviewMapper.findByMovieIdPaged(movieId, offset, size, sortBy);
+        
+        // 填充当前用户的点赞状态
+        if (currentUserId != null) {
+            for (Review review : list) {
+                review.setLiked(reviewLikeService.isLiked(currentUserId, review.getId()));
+            }
+        }
+        
         Long total = reviewMapper.countByMovieId(movieId);
         return PageResult.of(list, total, page, size);
     }

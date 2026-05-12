@@ -76,6 +76,18 @@ INSERT INTO `movie` (`title`, `poster`, `director`, `actors`, `genre`, `region`,
 ('寄生虫', '/images/jishengchong.jpg', '奉俊昊', '宋康昊,李善均,赵汝贞,崔宇植', '剧情', '韩国', '2019-05-30', 132, '基宇一家四口全是无业游民，住在狭窄的半地下室里。一天，基宇的同学上门拜访，给他介绍了一份去富人朴社长家做家教的工作。', 4.7, 210),
 ('盗梦空间', '/images/daomengkongjian.jpg', '克里斯托弗·诺兰', '莱昂纳多·迪卡普里奥,约瑟夫·高登-莱维特,艾伦·佩吉', '科幻', '美国', '2010-09-01', 148, '道姆·柯布是一位经验老道的窃贼，他在这一行中算得上是最厉害的，因为他能够潜入人们精神最为脆弱的梦境中，窃取潜意识中有价值的秘密。', 4.8, 256);
 
+-- 评论点赞表
+DROP TABLE IF EXISTS `review_like`;
+CREATE TABLE `review_like` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '点赞ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `review_id` BIGINT NOT NULL COMMENT '评论ID',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    UNIQUE KEY `uk_user_review` (`user_id`, `review_id`),
+    KEY `idx_review_id` (`review_id`),
+    KEY `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='评论点赞表';
+
 -- 插入测试评论数据
 INSERT INTO `review` (`user_id`, `movie_id`, `rating`, `content`) VALUES
 (1, 1, 5, '太震撼了！特效一流，剧情感人，国产科幻的巅峰之作！'),

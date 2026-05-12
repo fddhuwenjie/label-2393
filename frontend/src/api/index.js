@@ -70,11 +70,26 @@ export const movieApi = {
 
 // 评论相关API
 export const reviewApi = {
+  /**
+   * 获取电影评论列表
+   * @param {number} movieId - 电影ID
+   * @param {Object} params - 查询参数
+   * @param {number} params.page - 页码
+   * @param {number} params.size - 每页数量
+   * @param {string} params.sortBy - 排序方式：latest(最新) / hottest(最热)
+   * @returns {Promise} 返回评论列表数据
+   */
   getByMovieId: (movieId, params) => api.get(`/review/movie/${movieId}`, { params }),
   getByUserId: (userId, params) => api.get(`/review/user/${userId}`, { params }),
   checkUserReview: (userId, movieId) => api.get('/review/check', { params: { userId, movieId } }),
   save: (data) => api.post('/review', data),
-  delete: (id) => api.delete(`/review/${id}`)
+  delete: (id) => api.delete(`/review/${id}`),
+  /**
+   * 点赞/取消点赞评论
+   * @param {number} reviewId - 评论ID
+   * @returns {Promise} 返回点赞状态和点赞数
+   */
+  toggleLike: (reviewId) => api.post(`/review/${reviewId}/like`)
 }
 
 export default api
